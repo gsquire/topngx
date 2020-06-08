@@ -1,4 +1,6 @@
 # topngx
+[![CI](https://github.com/gsquire/topngx/workflows/CI/badge.svg)](https://github.com/gsquire/topngx/actions)
+
 This tool is a rewrite of [ngxtop](https://github.com/lebinh/ngxtop) to make it more easily
 installed and hopefully quicker. For those unfamiliar with the ngxtop, it is a tool that helps you
 parse NGINX access logs and print various statistics from them regardless of format. It is
