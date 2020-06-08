@@ -206,6 +206,7 @@ fn print_subcommand(opts: &Options, fields: Vec<String>) -> Result<()> {
 }
 
 fn query_subcommand(opts: &Options, fields: Vec<String>, query: String) -> Result<()> {
+    debug!("custom query: {}", query);
     run(opts, Some(fields), Some(vec![query]))
 }
 
