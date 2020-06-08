@@ -7,6 +7,9 @@ jobs:
     name: test
     runs-on: ubuntu-latest
     steps:
+      - name: Install SQLite
+        run: sudo apt-get install libsqlite3-dev
+
       - name: Checkout sources
         uses: actions/checkout@v2
 
