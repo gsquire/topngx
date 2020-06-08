@@ -63,16 +63,40 @@ struct Options {
 // The list of subcommands available to use.
 #[derive(Debug, StructOpt)]
 enum SubCommand {
+    /// Print the average of the given fields.
     Avg(Fields),
+
+    /// List the available fields as well as the access log and format being used.
     Info,
+
+    /// Print out the supplied fields with the given limit.
     Print(Fields),
+
+    /// Supply a custom query.
+    Query(Query),
+
+    /// Compute the sum of the given fields.
+    Sum(Fields),
+
+    /// Find the top values for the given fields.
     Top(Fields),
 }
 
-// The fields to query with for the various sub commands.
 #[derive(Debug, StructOpt)]
 struct Fields {
+    /// A space Separated list of field names.
     fields: Vec<String>,
+}
+
+#[derive(Debug, StructOpt)]
+struct Query {
+    /// A space separated list of field names.
+    #[structopt(short, long)]
+    fields: Vec<String>,
+
+    /// The supplied query. You typically will want to use your shell to quote it.
+    #[structopt(short, long)]
+    query: String,
 }
 
 // Either read from STDIN or the file specified.
@@ -183,6 +207,18 @@ fn print_subcommand(opts: &Options, fields: Vec<String>) -> Result<()> {
     run(opts, Some(fields), Some(vec![query]))
 }
 
+fn query_subcommand(opts: &Options, fields: Vec<String>, query: String) -> Result<()> {
+    run(opts, Some(fields), Some(vec![query]))
+}
+
+fn sum_subcommand(opts: &Options, fields: Vec<String>) -> Result<()> {
+    let sum_fields: Vec<String> = fields.iter().map(|f| format!("SUM({f})", f = f)).collect();
+    let selections = sum_fields.join(", ");
+    let query = format!("SELECT {selections} FROM log", selections = selections);
+    debug!("sum sub command query: {}", query);
+    run(opts, Some(fields), Some(vec![query]))
+}
+
 fn top_subcommand(opts: &Options, fields: Vec<String>) -> Result<()> {
     let mut queries = Vec::with_capacity(fields.len());
 
@@ -211,6 +247,8 @@ fn main() -> Result<()> {
             SubCommand::Avg(f) => avg_subcommand(&opts, f.fields.clone())?,
             SubCommand::Info => info_subcommand(&opts)?,
             SubCommand::Print(f) => print_subcommand(&opts, f.fields.clone())?,
+            SubCommand::Query(q) => query_subcommand(&opts, q.fields.clone(), q.query.clone())?,
+            SubCommand::Sum(f) => sum_subcommand(&opts, f.fields.clone())?,
             SubCommand::Top(f) => top_subcommand(&opts, f.fields.clone())?,
         }
         return Ok(());

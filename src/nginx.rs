@@ -26,7 +26,17 @@ pub(crate) fn available_variables(format: &str) -> Result<String> {
     Ok(format_to_pattern(format)?
         .capture_names()
         .filter_map(|c| match c {
-            Some(n) => Some(n.to_string()),
+            Some(n) => {
+                // TODO: Do we want to special case these or adjust our queries?
+                if n == "status" {
+                    return Some(String::from("status_type"));
+                } else if n == "body_bytes_sent" {
+                    return Some(String::from("bytes_sent"));
+                } else if n == "request" {
+                    return Some(String::from("request_path"));
+                }
+                Some(n.to_string())
+            }
             None => None,
         })
         .collect::<Vec<String>>()
@@ -39,7 +49,7 @@ mod tests {
 
     #[test]
     fn combined_matches() {
-        let line = r#"66.249.65.3 - - [06/Nov/2014:19:11:24 +0600] "GET / HTTP/1.1" 200 4223 "-" "User-Agent""#;
+        let line = r#"172.17.0.1 - - [06/Jun/2020:23:16:43 +0000] "GET / HTTP/1.1" 403 153 "-" "curl/7.54.0""#;
         let pattern = format_to_pattern(LOG_FORMAT_COMBINED).unwrap();
         assert!(pattern.captures(line).is_some());
     }
