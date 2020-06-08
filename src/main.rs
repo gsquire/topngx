@@ -63,8 +63,10 @@ struct Options {
 // The list of subcommands available to use.
 #[derive(Debug, StructOpt)]
 enum SubCommand {
+    Avg(Fields),
     Info,
     Print(Fields),
+    Top(Fields),
 }
 
 // The fields to query with for the various sub commands.
@@ -150,6 +152,14 @@ fn parse_input(input: Box<dyn BufRead>, pattern: &Regex, processor: &Processor) 
     processor.process(records)
 }
 
+fn avg_subcommand(opts: &Options, fields: Vec<String>) -> Result<()> {
+    let avg_fields: Vec<String> = fields.iter().map(|f| format!("AVG({f})", f = f)).collect();
+    let selections = avg_fields.join(", ");
+    let query = format!("SELECT {selections} FROM log", selections = selections);
+    debug!("average sub command query: {}", query);
+    run(opts, Some(fields), Some(vec![query]))
+}
+
 fn info_subcommand(opts: &Options) -> Result<()> {
     println!(
         "access log file: {}",
@@ -173,6 +183,23 @@ fn print_subcommand(opts: &Options, fields: Vec<String>) -> Result<()> {
     run(opts, Some(fields), Some(vec![query]))
 }
 
+fn top_subcommand(opts: &Options, fields: Vec<String>) -> Result<()> {
+    let mut queries = Vec::with_capacity(fields.len());
+
+    for f in &fields {
+        let query = format!(
+            "SELECT {field}, COUNT(1) AS count FROM log \
+            GROUP BY {field} ORDER BY COUNT DESC LIMIT {limit}",
+            field = f,
+            limit = opts.limit
+        );
+        debug!("top sub command query: {}", query);
+        queries.push(query);
+    }
+
+    run(opts, Some(fields), Some(queries))
+}
+
 fn main() -> Result<()> {
     env_logger::init();
 
@@ -181,8 +208,10 @@ fn main() -> Result<()> {
 
     if let Some(sc) = &opts.subcommand {
         match sc {
+            SubCommand::Avg(f) => avg_subcommand(&opts, f.fields.clone())?,
             SubCommand::Info => info_subcommand(&opts)?,
             SubCommand::Print(f) => print_subcommand(&opts, f.fields.clone())?,
+            SubCommand::Top(f) => top_subcommand(&opts, f.fields.clone())?,
         }
         return Ok(());
     }
