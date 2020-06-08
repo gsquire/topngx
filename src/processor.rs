@@ -117,7 +117,7 @@ impl Processor {
                         Value::Blob(b) => write!(&mut tw, "{}\t", String::from_utf8(b)?)?,
                     }
                 }
-                write!(&mut tw, "\n")?;
+                writeln!(&mut tw)?;
             }
             tw.flush()?;
         }

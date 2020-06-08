@@ -103,12 +103,10 @@ struct Query {
 fn input_source(opts: &Options, access_log: &str) -> Result<Box<dyn BufRead>> {
     if access_log == STDIN {
         Ok(Box::new(BufReader::new(io::stdin())))
+    } else if opts.no_follow {
+        Ok(Box::new(BufReader::new(File::open(access_log)?)))
     } else {
-        if opts.no_follow {
-            Ok(Box::new(BufReader::new(File::open(access_log)?)))
-        } else {
-            Err(anyhow!("following log files is not currently implemented"))
-        }
+        Err(anyhow!("following log files is not currently implemented"))
     }
 }
 
@@ -127,7 +125,7 @@ fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>
     info!("access log format: {}", opts.format);
 
     let input = input_source(opts, access_log)?;
-    let pattern = format_to_pattern("")?;
+    let pattern = format_to_pattern(&opts.format)?;
     let processor = generate_processor(opts, fields, queries)?;
     parse_input(input, &pattern, &processor)?;
     processor.report()

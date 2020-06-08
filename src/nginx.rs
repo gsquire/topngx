@@ -2,6 +2,7 @@ use anyhow::Result;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+const COMBINED: &str = "combined";
 const LOG_FORMAT_COMBINED: &str = r#"$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent""#;
 
 // We know that these patterns will compile.
@@ -9,9 +10,10 @@ static NGINX_VARIABLE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\$([a-zA-Z0
 static SPECIAL_CHARS_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"([\.\*\+\?\|\(\)\{\}\[\]])").unwrap());
 
-// TODO: Allow use of other formats for the parameter.
-pub(crate) fn format_to_pattern(_format: &str) -> Result<Regex> {
-    let format = LOG_FORMAT_COMBINED;
+pub(crate) fn format_to_pattern(mut format: &str) -> Result<Regex> {
+    if format == COMBINED {
+        format = LOG_FORMAT_COMBINED;
+    }
 
     // Escape all of the existing special characters.
     let pattern = SPECIAL_CHARS_REGEX.replace_all(format, r"\$1");
