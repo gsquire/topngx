@@ -142,7 +142,10 @@ pub(crate) fn generate_processor(
     match fields {
         Some(f) => log_fields = f,
         None => {
-            log_fields = vec![String::from("status_type"), String::from("bytes_sent")];
+            log_fields = vec![
+                String::from(super::STATUS_TYPE),
+                String::from(super::BYTES_SENT),
+            ];
             if !log_fields.contains(&opts.group_by) {
                 log_fields.push(opts.group_by.clone());
             }

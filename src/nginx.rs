@@ -29,13 +29,13 @@ pub(crate) fn available_variables(format: &str) -> Result<String> {
         .capture_names()
         .filter_map(|c| match c {
             Some(n) => {
-                // TODO: Do we want to special case these or adjust our queries?
+                // Make some adjustments based on the schema.
                 if n == "status" {
-                    return Some(String::from("status_type"));
+                    return Some(String::from(super::STATUS_TYPE));
                 } else if n == "body_bytes_sent" {
-                    return Some(String::from("bytes_sent"));
+                    return Some(String::from(super::BYTES_SENT));
                 } else if n == "request" {
-                    return Some(String::from("request_path"));
+                    return Some(String::from(super::REQUEST_PATH));
                 }
                 Some(n.to_string())
             }

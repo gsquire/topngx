@@ -15,6 +15,11 @@ mod processor;
 
 const STDIN: &str = "STDIN";
 
+// Common field names.
+const STATUS_TYPE: &str = "status_type";
+const BYTES_SENT: &str = "bytes_sent";
+const REQUEST_PATH: &str = "request_path";
+
 #[derive(Debug, StructOpt)]
 #[structopt(
     author,
@@ -23,7 +28,6 @@ const STDIN: &str = "STDIN";
     rename_all = "kebab-case"
 )]
 struct Options {
-    // TODO: Use a `PathBuf`?
     /// The access log to parse.
     #[structopt(short, long)]
     access_log: Option<String>,
@@ -141,16 +145,15 @@ fn parse_input(input: Box<dyn BufRead>, pattern: &Regex, processor: &Processor) 
                 let mut record: Vec<(String, Box<dyn ToSql>)> = vec![];
 
                 for field in &processor.fields {
-                    // TODO: Make constants?
-                    if field == "status_type" {
+                    if field == STATUS_TYPE {
                         let status = c.name("status").map_or("", |m| m.as_str());
                         let status_type = status.parse::<u16>().unwrap_or(0) / 100;
                         record.push((format!(":{}", field), Box::new(status_type)));
-                    } else if field == "bytes_sent" {
+                    } else if field == BYTES_SENT {
                         let bytes_sent = c.name("body_bytes_sent").map_or("", |m| m.as_str());
                         let bytes_sent = bytes_sent.parse::<u32>().unwrap_or(0);
                         record.push((format!(":{}", field), Box::new(bytes_sent)));
-                    } else if field == "request_path" {
+                    } else if field == REQUEST_PATH {
                         if c.name("request_uri").is_some() {
                             record.push((
                                 format!(":{}", field),
@@ -190,7 +193,10 @@ fn info_subcommand(opts: &Options) -> Result<()> {
             .unwrap_or_else(|| String::from(STDIN))
     );
     println!("access log format: {}", opts.format);
-    println!("available variables to query: {}", available_variables("")?);
+    println!(
+        "available variables to query: {}",
+        available_variables(&opts.format)?
+    );
 
     Ok(())
 }
