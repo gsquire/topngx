@@ -2,13 +2,22 @@
 [![CI](https://github.com/gsquire/topngx/workflows/CI/badge.svg)](https://github.com/gsquire/topngx/actions)
 
 This tool is a rewrite of [ngxtop](https://github.com/lebinh/ngxtop) to make it more easily
-installed and hopefully quicker. For those unfamiliar with the ngxtop, it is a tool that helps you
+installable and hopefully quicker. For those unfamiliar with the ngxtop, it is a tool that helps you
 parse NGINX access logs and print various statistics from them regardless of format. It is
-currently not feature complete with the original version but it should have enough functionality
+currently not as feature complete as the original version but it should have enough functionality
 to be usable.
 
+![topngx screenshot](doc/screenshot.png)
+
 ## Installation
-For those who have Rust installed, you can download it from [crates.io](https://crates.io):
+
+You are going to need the build tools of your operating system and the sqlite3 development headers to install topngx from [crates.io](https://crates.io). On an Ubuntu system, the following command gets you everything needed to successfully compile the software:
+
+```sh
+sudo apt install build-essential libsqlite3-dev
+```
+
+Then, you can simply fetch it from [crates.io](https://crates.io) using the cargo command:
 
 ```sh
 cargo install topngx
