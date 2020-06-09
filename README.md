@@ -54,6 +54,13 @@ Some example queries are:
 # Or use the --access-log and --no-follow flags if you do not want to read from standard input.
 topngx < /path/to/access.log
 
+# Output:
+count  avg_bytes_sent  2XX  3XX  4XX  5XX
+2      346.5           2    0    0    0
+request_path              count  avg_bytes_sent  2XX  3XX  4XX  5XX
+GET / HTTP/1.1            1      612             1    0    0    0
+GET /some_file1 HTTP/1.1  1      81              1    0    0    0
+
 # See the fields that you can use for queries.
 topngx info
 
@@ -70,7 +77,13 @@ The original version allowed for automatic detection of NGINX configuration file
 paths, and log format styles. topngx currently has command line options for these and may add this
 functionality in a later version.
 
-If you find any other issues or features that may be missing, feel free to open an issue.
+If you find any other issues or features that may be missing, feel free to open an issue. You can
+also utilize logging via the [env_logger](https://github.com/sebasmagri/env_logger/) crate.
+
+```sh
+# See the env_logger README for the various levels.
+RUST_LOG=debug topngx < /path/to/access.log
+```
 
 ## License
 MIT
