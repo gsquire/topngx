@@ -62,7 +62,7 @@ GET / HTTP/1.1            1      612             1    0    0    0
 GET /some_file1 HTTP/1.1  1      81              1    0    0    0
 
 # See the fields that you can use for queries.
-topngx info
+topngx info < access.log
 
 # Run a custom query.
 # The fields passed in can be viewed via the info sub command.
