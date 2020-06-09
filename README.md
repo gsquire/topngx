@@ -64,6 +64,14 @@ GET /some_file1 HTTP/1.1  1      81              1    0    0    0
 # See the fields that you can use for queries.
 topngx info < access.log
 
+# Use a custom log format.
+topngx -f '$remote_addr - $remote_user [$time_local] "$request" $status $bytes_sent' info
+
+Output:
+access log file: STDIN
+access log format: $remote_addr - $remote_user [$time_local] "$request" $status $bytes_sent
+available variables to query: remote_addr, remote_user, time_local, request_path, status_type, bytes_sent
+
 # Run a custom query.
 # The fields passed in can be viewed via the info sub command.
 topngx query -q 'select * from log where bytes_sent > 100' -f request_path bytes_sent < access.log
