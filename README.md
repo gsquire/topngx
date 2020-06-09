@@ -67,7 +67,7 @@ topngx info < access.log
 # Use a custom log format.
 topngx -f '$remote_addr - $remote_user [$time_local] "$request" $status $bytes_sent' info
 
-Output:
+# Output:
 access log file: STDIN
 access log format: $remote_addr - $remote_user [$time_local] "$request" $status $bytes_sent
 available variables to query: remote_addr, remote_user, time_local, request_path, status_type, bytes_sent
