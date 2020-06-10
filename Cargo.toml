@@ -1,6 +1,6 @@
 [package]
 name = "topngx"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Garrett Squire <github@garrettsquire.com>"]
 edition = "2018"
 description = "Top for NGINX"
@@ -18,6 +18,9 @@ regex = "1.3"
 rusqlite = "0.23"
 structopt = "0.3"
 tabwriter = "1.2"
+
+[features]
+bundled-sqlite = ["rusqlite/bundled"]
 
 [profile.release]
 lto = true

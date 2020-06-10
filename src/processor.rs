@@ -112,7 +112,7 @@ impl Processor {
                     match val {
                         Value::Null => write!(&mut tw, "null\t")?,
                         Value::Integer(i) => write!(&mut tw, "{}\t", i)?,
-                        Value::Real(r) => write!(&mut tw, "{}\t", r)?,
+                        Value::Real(r) => write!(&mut tw, "{:.2}\t", r)?,
                         Value::Text(t) => write!(&mut tw, "{}\t", t)?,
                         Value::Blob(b) => write!(&mut tw, "{}\t", String::from_utf8(b)?)?,
                     }

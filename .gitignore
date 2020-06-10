@@ -2,4 +2,5 @@
 Dockerfile
 nginx.conf
 *.log
+*.tar.gz
 /target
