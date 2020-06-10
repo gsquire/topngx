@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -eux
+
+# The semantic version is the first and only argument.
+VERSION="$1"
+
+cargo build --release
+
+# Cross compile for Linux via the MUSL toolchain.
+TARGET_CC=x86_64-linux-musl-gcc \
+    cargo build \
+    --release \
+    --target x86_64-unknown-linux-musl \
+    --features bundled-sqlite
+
+# Build archives.
+shasum -a 256 target/release/topngx > target/release/SHA256
+shasum -a 256 target/x86_64-unknown-linux-musl/release/topngx \
+    > target/x86_64-unknown-linux-musl/release/SHA256
+
+tar -czf "topngx-$VERSION-x86_64-apple-darwin.tar.gz" \
+    -C target/release \
+    SHA256 topngx
+
+tar -czf "topngx-$VERSION-x86_64-unknown-linux-musl.tar.gz" \
+    -C target/x86_64-unknown-linux-musl/release \
+    SHA256 topngx
