@@ -54,7 +54,10 @@ impl Processor {
     }
 
     /// Insert all of the given records into the database.
-    pub(crate) fn process(&self, records: Vec<Vec<(String, Box<dyn ToSql>)>>) -> Result<()> {
+    pub(crate) fn process(
+        &self,
+        records: Vec<Vec<(String, Box<dyn ToSql + Send + Sync>)>>,
+    ) -> Result<()> {
         let insert_stmt = format!(
             "INSERT INTO LOG ({columns}) VALUES ({placeholders})",
             columns = self.columns,

@@ -3,6 +3,7 @@ use std::io::{self, BufRead, BufReader};
 
 use anyhow::{anyhow, Result};
 use log::{debug, info};
+use rayon::prelude::*;
 use regex::Regex;
 use rusqlite::types::ToSql;
 use structopt::StructOpt;
@@ -136,15 +137,16 @@ fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>
 }
 
 fn parse_input(input: Box<dyn BufRead>, pattern: &Regex, processor: &Processor) -> Result<()> {
-    let mut records = vec![];
-
-    for line in input.lines() {
-        match pattern.captures(&line?) {
-            None => {}
+    let fields = processor.fields.clone();
+    let lines: Vec<String> = input.lines().filter_map(|l| l.ok()).collect();
+    let records: Vec<_> = lines
+        .par_iter()
+        .filter_map(|line| match pattern.captures(&line) {
+            None => None,
             Some(c) => {
-                let mut record: Vec<(String, Box<dyn ToSql>)> = vec![];
+                let mut record: Vec<(String, Box<dyn ToSql + Send + Sync>)> = vec![];
 
-                for field in &processor.fields {
+                for field in &fields {
                     if field == STATUS_TYPE {
                         let status = c.name("status").map_or("", |m| m.as_str());
                         let status_type = status.parse::<u16>().unwrap_or(0) / 100;
@@ -169,10 +171,10 @@ fn parse_input(input: Box<dyn BufRead>, pattern: &Regex, processor: &Processor) 
                     }
                 }
 
-                records.push(record);
+                Some(record)
             }
-        }
-    }
+        })
+        .collect();
 
     processor.process(records)
 }
