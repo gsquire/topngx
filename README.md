@@ -78,12 +78,9 @@ topngx query -q 'select * from log where bytes_sent > 100' -f request_path bytes
 ```
 
 ## Limitations
-The original version could tail log files in real time. Currently topngx can not do this but I am
-exploring options on how this can be done. Ideally I could use some implementation that is able to
-be `Read` from. There is also no option to filter the data but this could be added in the future.
-The original version allowed for automatic detection of NGINX configuration files, log file
-paths, and log format styles. topngx currently has command line options for these and may add this
-functionality in a later version.
+There is no option to filter the data but this could be added in the future. The original version
+allowed for automatic detection of NGINX configuration files, log file paths, and log format styles.
+topngx currently has command line options for these and may add this functionality in a later version.
 
 If you find any other issues or features that may be missing, feel free to open an issue. You can
 also utilize logging via the [env_logger](https://github.com/sebasmagri/env_logger/) crate.
