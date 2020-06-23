@@ -1,17 +1,34 @@
 # topngx
 [![CI](https://github.com/gsquire/topngx/workflows/CI/badge.svg)](https://github.com/gsquire/topngx/actions)
 
-This tool is a rewrite of [ngxtop](https://github.com/lebinh/ngxtop) to make it more easily
-installed and hopefully quicker. For those unfamiliar with the ngxtop, it is a tool that helps you
+This tool is a rewrite of [ngxtop](https://github.com/lebinh/ngxtop) to make it easier to install
+and hopefully run faster. For those unfamiliar with the ngxtop, it is a tool that helps you
 parse NGINX access logs and print various statistics from them regardless of format. It is
-currently not feature complete with the original version but it should have enough functionality
+currently not as feature complete as the original version but it should have enough functionality
 to be usable.
 
+![screenshot](screenshot.png)
+
 ## Installation
-For those who have Rust installed, you can download it from [crates.io](https://crates.io):
+There are a few ways to install it. The easiest way is to grab a release from [here](https://github.com/gsquire/topngx/releases).
+Otherwise, you can install it from [crates.io](https://crates.io/crates/topngx) with a working Rust
+installation:
 
 ```sh
 cargo install topngx
+
+# If you do not have SQLite headers installed on your system, you can use the bundled feature.
+cargo install topngx --features bundled-sqlite
+```
+
+SQLite development headers are easy to get on Mac and Linux:
+
+```sh
+# On Mac.
+brew install sqlite
+
+# On Debian based Linux.
+sudo apt-get update && sudo apt-get install libsqlite3-dev
 ```
 
 ## Usage
@@ -78,12 +95,9 @@ topngx query -q 'select * from log where bytes_sent > 100' -f request_path bytes
 ```
 
 ## Limitations
-The original version could tail log files in real time. Currently topngx can not do this but I am
-exploring options on how this can be done. Ideally I could use some implementation that is able to
-be `Read` from. There is also no option to filter the data but this could be added in the future.
-The original version allowed for automatic detection of NGINX configuration files, log file
-paths, and log format styles. topngx currently has command line options for these and may add this
-functionality in a later version.
+There is no option to filter the data but this could be added in the future. The original version
+allowed for automatic detection of NGINX configuration files, log file paths, and log format styles.
+topngx currently has command line options for these and may add this functionality in a later version.
 
 If you find any other issues or features that may be missing, feel free to open an issue. You can
 also utilize logging via the [env_logger](https://github.com/sebasmagri/env_logger/) crate.

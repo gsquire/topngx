@@ -1,7 +1,13 @@
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Seek, SeekFrom, Write};
+use std::thread;
+use std::time::Duration;
 
 use anyhow::{anyhow, Result};
+use crossbeam_channel::{select, tick, unbounded};
+use crossterm::cursor::SavePosition;
+use crossterm::execute;
+use crossterm::terminal::{Clear, ClearType};
 use log::{debug, info};
 use rayon::prelude::*;
 use regex::Regex;
@@ -104,15 +110,73 @@ struct Query {
     query: String,
 }
 
-// Either read from STDIN or the file specified.
-fn input_source(opts: &Options, access_log: &str) -> Result<Box<dyn BufRead>> {
-    if access_log == STDIN {
-        Ok(Box::new(BufReader::new(io::stdin())))
-    } else if opts.no_follow {
-        Ok(Box::new(BufReader::new(File::open(access_log)?)))
-    } else {
-        Err(anyhow!("following log files is not currently implemented"))
+fn tail(
+    opts: &Options,
+    access_log: &str,
+    fields: Option<Vec<String>>,
+    queries: Option<Vec<String>>,
+) -> Result<()> {
+    const SLEEP: u64 = 100;
+    const CHUNK: usize = 5;
+
+    // Save our cursor position.
+    execute!(io::stdout(), SavePosition)?;
+
+    let f = File::open(access_log)?;
+    let stat = f.metadata()?;
+    let mut len = stat.len();
+    let mut tail_reader = BufReader::new(f);
+    tail_reader.seek(SeekFrom::Start(len))?;
+
+    let pattern = format_to_pattern(&opts.format)?;
+    let processor = generate_processor(opts, fields, queries)?;
+    let (tx, rx) = unbounded();
+    let ticker = tick(Duration::from_secs(opts.interval));
+
+    thread::spawn(move || -> Result<()> {
+        loop {
+            let mut line = String::new();
+            let n_read = tail_reader.read_line(&mut line)?;
+
+            if n_read > 0 {
+                len += n_read as u64;
+                tail_reader.seek(SeekFrom::Start(len))?;
+                line.pop(); // Remove the newline character.
+                debug!("tail read: {}", line);
+                tx.send(line)?;
+            } else {
+                debug!("tail sleeping for {} milliseconds", SLEEP);
+                thread::sleep(Duration::from_millis(SLEEP));
+            }
+        }
+    });
+
+    let mut lines = Vec::with_capacity(CHUNK);
+    loop {
+        select! {
+            recv(rx) -> line => {
+                lines.push(line?);
+                // If we have reached our internal buffering size, write them to the SQL engine and
+                // reset the vector.
+                if lines.len() == CHUNK {
+                    parse_input(&lines, &pattern, &processor)?;
+                    lines.clear();
+                }
+            }
+            recv(ticker) -> _ => {
+                execute!(io::stdout(), Clear(ClearType::All))?;
+                processor.report()?;
+            }
+        }
     }
+}
+
+// Either read from STDIN or the file specified.
+fn input_source(access_log: &str) -> Result<Box<dyn BufRead>> {
+    if access_log == STDIN {
+        return Ok(Box::new(BufReader::new(io::stdin())));
+    }
+    Ok(Box::new(BufReader::new(File::open(access_log)?)))
 }
 
 fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>) -> Result<()> {
@@ -129,16 +193,24 @@ fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>
     info!("access log: {}", access_log);
     info!("access log format: {}", opts.format);
 
-    let input = input_source(opts, access_log)?;
+    // We need to tail the log file.
+    if !opts.no_follow {
+        return tail(opts, access_log, fields, queries);
+    }
+
+    let input = input_source(access_log)?;
+    let lines = input
+        .lines()
+        .filter_map(|l| l.ok())
+        .collect::<Vec<String>>();
     let pattern = format_to_pattern(&opts.format)?;
     let processor = generate_processor(opts, fields, queries)?;
-    parse_input(input, &pattern, &processor)?;
+    parse_input(&lines, &pattern, &processor)?;
     processor.report()
 }
 
-fn parse_input(input: Box<dyn BufRead>, pattern: &Regex, processor: &Processor) -> Result<()> {
+fn parse_input(lines: &[String], pattern: &Regex, processor: &Processor) -> Result<()> {
     let fields = processor.fields.clone();
-    let lines: Vec<String> = input.lines().filter_map(|l| l.ok()).collect();
     let records: Vec<_> = lines
         .par_iter()
         .filter_map(|line| match pattern.captures(&line) {

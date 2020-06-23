@@ -2,6 +2,8 @@ use std::fmt::Debug;
 use std::io::{self, Write};
 
 use anyhow::Result;
+use crossterm::cursor::RestorePosition;
+use crossterm::execute;
 use log::debug;
 use rusqlite::types::{ToSql, Value};
 use rusqlite::{params, Connection};
@@ -124,6 +126,9 @@ impl Processor {
             }
             tw.flush()?;
         }
+
+        // Restore our original cursor position.
+        execute!(io::stdout(), RestorePosition)?;
 
         Ok(())
     }
