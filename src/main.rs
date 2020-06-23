@@ -130,7 +130,6 @@ fn tail(
 
     let pattern = format_to_pattern(&opts.format)?;
     let processor = generate_processor(opts, fields, queries)?;
-    let mut lines = Vec::with_capacity(CHUNK);
     let (tx, rx) = unbounded();
     let ticker = tick(Duration::from_secs(opts.interval));
 
@@ -152,6 +151,7 @@ fn tail(
         }
     });
 
+    let mut lines = Vec::with_capacity(CHUNK);
     loop {
         select! {
             recv(rx) -> line => {
