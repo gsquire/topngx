@@ -11,6 +11,7 @@ readme = "README.md"
 [dependencies]
 anyhow = "1.0"
 atty = "0.2"
+crossbeam-channel = "0.4"
 crossterm = "0.17"
 env_logger = "0.7"
 log = "0.4"

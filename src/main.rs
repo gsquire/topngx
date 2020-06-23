@@ -4,6 +4,7 @@ use std::thread;
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
+use crossbeam_channel::{select, tick, unbounded};
 use crossterm::cursor::SavePosition;
 use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
@@ -115,8 +116,8 @@ fn tail(
     fields: Option<Vec<String>>,
     queries: Option<Vec<String>>,
 ) -> Result<()> {
-    const SLEEP: u64 = 5000;
-    const CHUNK: usize = 10;
+    const SLEEP: u64 = 100;
+    const CHUNK: usize = 5;
 
     // Save our cursor position.
     execute!(io::stdout(), SavePosition)?;
@@ -130,34 +131,42 @@ fn tail(
     let pattern = format_to_pattern(&opts.format)?;
     let processor = generate_processor(opts, fields, queries)?;
     let mut lines = Vec::with_capacity(CHUNK);
+    let (tx, rx) = unbounded();
+    let ticker = tick(Duration::from_secs(opts.interval));
 
-    // TODO: Pop this onto another thread and use a channel to send lines to the main thread where
-    // it can then do the `parse_input` and `report` calls?
-    loop {
-        let mut line = String::new();
-        let n_read = tail_reader.read_line(&mut line)?;
+    thread::spawn(move || -> Result<()> {
+        loop {
+            let mut line = String::new();
+            let n_read = tail_reader.read_line(&mut line)?;
 
-        if n_read > 0 {
-            len += n_read as u64;
-            tail_reader.seek(SeekFrom::Start(len))?;
-            line.pop(); // Remove the newline character.
-            debug!("tail read: {}", line);
-            lines.push(line);
-
-            // If we have reached our internal buffering size, write them to the SQL engine and
-            // reset the vector.
-            if lines.len() == CHUNK {
-                parse_input(&lines, &pattern, &processor)?;
-                lines.clear();
+            if n_read > 0 {
+                len += n_read as u64;
+                tail_reader.seek(SeekFrom::Start(len))?;
+                line.pop(); // Remove the newline character.
+                debug!("tail read: {}", line);
+                tx.send(line)?;
+            } else {
+                debug!("tail sleeping for {} milliseconds", SLEEP);
+                thread::sleep(Duration::from_millis(SLEEP));
             }
-        } else {
-            // TODO: Move everything until the debug statement and actually use the interval
-            // argument provided.
-            execute!(io::stdout(), Clear(ClearType::All))?;
-            processor.report()?;
+        }
+    });
 
-            debug!("tail sleeping for {} milliseconds", SLEEP);
-            thread::sleep(Duration::from_millis(SLEEP));
+    loop {
+        select! {
+            recv(rx) -> line => {
+                lines.push(line?);
+                // If we have reached our internal buffering size, write them to the SQL engine and
+                // reset the vector.
+                if lines.len() == CHUNK {
+                    parse_input(&lines, &pattern, &processor)?;
+                    lines.clear();
+                }
+            }
+            recv(ticker) -> _ => {
+                execute!(io::stdout(), Clear(ClearType::All))?;
+                processor.report()?;
+            }
         }
     }
 }
