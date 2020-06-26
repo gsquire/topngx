@@ -52,11 +52,11 @@ struct Options {
     having: u64,
 
     /// Refresh the statistics using this interval which is given in seconds.
-    #[structopt(short = "t", long, default_value = "2")]
+    #[structopt(short, long, default_value = "2")]
     interval: u64,
 
     /// Tail the specified log file. You cannot tail standard input.
-    #[structopt(short = "n", long = "follow")]
+    #[structopt(short = "t", long)]
     follow: bool,
 
     /// The number of records to limit for each query.
