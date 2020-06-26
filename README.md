@@ -31,9 +31,12 @@ brew install sqlite
 sudo apt-get update && sudo apt-get install libsqlite3-dev
 ```
 
+## CHANGELOG
+[See here](CHANGELOG.md)
+
 ## Usage
 ```sh
-topngx 0.1.0
+topngx 0.3.0
 Garrett Squire <github@garrettsquire.com>
 top for NGINX
 
@@ -41,16 +44,16 @@ USAGE:
     topngx [FLAGS] [OPTIONS] [SUBCOMMAND]
 
 FLAGS:
-    -h, --help         Prints help information
-    -n, --no-follow    Do not tail the log file and only report what is currently there
-    -V, --version      Prints version information
+    -t, --follow     Tail the specified log file. You cannot tail standard input
+    -h, --help       Prints help information
+    -V, --version    Prints version information
 
 OPTIONS:
     -a, --access-log <access-log>    The access log to parse
     -f, --format <format>            The specific log format with which to parse [default: combined]
     -g, --group-by <group-by>        Group by this variable [default: request_path]
     -w, --having <having>            Having clause [default: 1]
-    -t, --interval <interval>        Refresh the statistics using this interval which is given in seconds [default: 2]
+    -i, --interval <interval>        Refresh the statistics using this interval which is given in seconds [default: 2]
     -l, --limit <limit>              The number of records to limit for each query [default: 10]
     -o, --order-by <order-by>        Order of output for the default queries [default: count]
 

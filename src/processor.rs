@@ -81,7 +81,7 @@ impl Processor {
     }
 
     /// Run the queries as specified by the user.
-    pub(crate) fn report(&self) -> Result<()> {
+    pub(crate) fn report(&self, save_cursor: bool) -> Result<()> {
         for query in &self.queries {
             debug!("report query: {}", query);
 
@@ -127,8 +127,10 @@ impl Processor {
             tw.flush()?;
         }
 
-        // Restore our original cursor position.
-        execute!(io::stdout(), RestorePosition)?;
+        // Restore our original cursor position only in tail mode.
+        if save_cursor {
+            execute!(io::stdout(), RestorePosition)?;
+        }
 
         Ok(())
     }

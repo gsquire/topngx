@@ -52,16 +52,16 @@ struct Options {
     having: u64,
 
     /// Refresh the statistics using this interval which is given in seconds.
-    #[structopt(short = "t", long, conflicts_with = "no_follow", default_value = "2")]
+    #[structopt(short, long, default_value = "2")]
     interval: u64,
+
+    /// Tail the specified log file. You cannot tail standard input.
+    #[structopt(short = "t", long)]
+    follow: bool,
 
     /// The number of records to limit for each query.
     #[structopt(short, long, default_value = "10")]
     limit: u64,
-
-    /// Do not tail the log file and only report what is currently there.
-    #[structopt(short, long)]
-    no_follow: bool,
 
     /// Order of output for the default queries.
     #[structopt(short, long, default_value = "count")]
@@ -165,7 +165,7 @@ fn tail(
             }
             recv(ticker) -> _ => {
                 execute!(io::stdout(), Clear(ClearType::All))?;
-                processor.report()?;
+                processor.report(opts.follow)?;
             }
         }
     }
@@ -193,8 +193,13 @@ fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>
     info!("access log: {}", access_log);
     info!("access log format: {}", opts.format);
 
+    // We cannot tail STDIN.
+    if opts.follow && access_log == STDIN {
+        return Err(anyhow!("cannot tail STDIN"));
+    }
+
     // We need to tail the log file.
-    if !opts.no_follow {
+    if opts.follow {
         return tail(opts, access_log, fields, queries);
     }
 
@@ -206,7 +211,7 @@ fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>
     let pattern = format_to_pattern(&opts.format)?;
     let processor = generate_processor(opts, fields, queries)?;
     parse_input(&lines, &pattern, &processor)?;
-    processor.report()
+    processor.report(opts.follow)
 }
 
 fn parse_input(lines: &[String], pattern: &Regex, processor: &Processor) -> Result<()> {
