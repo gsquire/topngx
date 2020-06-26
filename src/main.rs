@@ -165,7 +165,7 @@ fn tail(
             }
             recv(ticker) -> _ => {
                 execute!(io::stdout(), Clear(ClearType::All))?;
-                processor.report()?;
+                processor.report(!opts.no_follow)?;
             }
         }
     }
@@ -193,6 +193,11 @@ fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>
     info!("access log: {}", access_log);
     info!("access log format: {}", opts.format);
 
+    // We cannot tail STDIN.
+    if !opts.no_follow && access_log == STDIN {
+        return Err(anyhow!("cannot tail STDIN"));
+    }
+
     // We need to tail the log file.
     if !opts.no_follow {
         return tail(opts, access_log, fields, queries);
@@ -206,7 +211,7 @@ fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>
     let pattern = format_to_pattern(&opts.format)?;
     let processor = generate_processor(opts, fields, queries)?;
     parse_input(&lines, &pattern, &processor)?;
-    processor.report()
+    processor.report(!opts.no_follow)
 }
 
 fn parse_input(lines: &[String], pattern: &Regex, processor: &Processor) -> Result<()> {
