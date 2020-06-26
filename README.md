@@ -31,6 +31,9 @@ brew install sqlite
 sudo apt-get update && sudo apt-get install libsqlite3-dev
 ```
 
+## CHANGELOG
+[See here](CHANGELOG.md)
+
 ## Usage
 ```sh
 topngx 0.1.0

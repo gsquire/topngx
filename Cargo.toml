@@ -1,6 +1,6 @@
 [package]
 name = "topngx"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Garrett Squire <github@garrettsquire.com>"]
 edition = "2018"
 description = "Top for NGINX"
