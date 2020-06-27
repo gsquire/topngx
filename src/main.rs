@@ -1,10 +1,12 @@
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Seek, SeekFrom, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
-use crossbeam_channel::{select, tick, unbounded};
+use crossbeam_channel::{bounded, select, tick, unbounded};
 use crossterm::cursor::SavePosition;
 use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
@@ -117,7 +119,6 @@ fn tail(
     queries: Option<Vec<String>>,
 ) -> Result<()> {
     const SLEEP: u64 = 100;
-    const CHUNK: usize = 5;
 
     // Save our cursor position.
     execute!(io::stdout(), SavePosition)?;
@@ -133,35 +134,45 @@ fn tail(
     let (tx, rx) = unbounded();
     let ticker = tick(Duration::from_secs(opts.interval));
 
-    thread::spawn(move || -> Result<()> {
-        loop {
-            let mut line = String::new();
-            let n_read = tail_reader.read_line(&mut line)?;
+    // The interrupt handling plumbing.
+    let (stop_tx, stop_rx) = bounded(0);
+    let running = Arc::new(AtomicBool::new(true));
+    let handler_r = Arc::clone(&running);
 
-            if n_read > 0 {
-                len += n_read as u64;
-                tail_reader.seek(SeekFrom::Start(len))?;
-                line.pop(); // Remove the newline character.
-                debug!("tail read: {}", line);
-                tx.send(line)?;
-            } else {
-                debug!("tail sleeping for {} milliseconds", SLEEP);
-                thread::sleep(Duration::from_millis(SLEEP));
+    ctrlc::set_handler(move || {
+        handler_r.store(false, Ordering::SeqCst);
+    })?;
+
+    let reader_handle = thread::spawn(move || -> Result<()> {
+        loop {
+            select! {
+                recv(stop_rx) -> _ => { return Ok(()); }
+                default => {
+                    let mut line = String::new();
+                    let n_read = tail_reader.read_line(&mut line)?;
+
+                    if n_read > 0 {
+                        len += n_read as u64;
+                        tail_reader.seek(SeekFrom::Start(len))?;
+                        line.pop(); // Remove the newline character.
+                        debug!("tail read: {}", line);
+                        tx.send(line)?;
+                    } else {
+                        debug!("tail sleeping for {} milliseconds", SLEEP);
+                        thread::sleep(Duration::from_millis(SLEEP));
+                    }
+                }
             }
         }
     });
 
-    let mut lines = Vec::with_capacity(CHUNK);
-    loop {
+    let mut lines = Vec::new();
+    while running.load(Ordering::SeqCst) {
         select! {
             recv(rx) -> line => {
                 lines.push(line?);
-                // If we have reached our internal buffering size, write them to the SQL engine and
-                // reset the vector.
-                if lines.len() == CHUNK {
-                    parse_input(&lines, &pattern, &processor)?;
-                    lines.clear();
-                }
+                parse_input(&lines, &pattern, &processor)?;
+                lines.clear();
             }
             recv(ticker) -> _ => {
                 execute!(io::stdout(), Clear(ClearType::All))?;
@@ -169,6 +180,15 @@ fn tail(
             }
         }
     }
+
+    // We got an interrupt, so stop the reading thread.
+    stop_tx.send(())?;
+
+    // The join will panic if the thread panics but otherwise it will propagate the return value up
+    // to the main thread.
+    reader_handle
+        .join()
+        .expect("the file reading thread should not have panicked")
 }
 
 // Either read from STDIN or the file specified.
