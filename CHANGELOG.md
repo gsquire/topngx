@@ -1,3 +1,9 @@
+## 0.3.1
+- Pull Requests
+  - https://github.com/gsquire/topngx/pull/8
+- Make sure to clean the tail reading thread up.
+- Remove the internal buffering count to get a quicker update while tailing.
+
 ## 0.3.0
 - Pull Requests
   - https://github.com/gsquire/topngx/pull/7
