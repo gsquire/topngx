@@ -69,8 +69,8 @@ impl Processor {
 
         let mut stmt = self.conn.prepare_cached(&insert_stmt)?;
         for record in records {
-            stmt.execute_named(
-                &record
+            stmt.execute(
+                &*record
                     .iter()
                     .map(|r| (r.0.as_str(), &r.1 as &dyn ToSql))
                     .collect::<Vec<(&str, &dyn ToSql)>>(),
@@ -85,20 +85,20 @@ impl Processor {
         for query in &self.queries {
             debug!("report query: {}", query);
 
-            let mut stmt = self.conn.prepare_cached(&query)?;
+            let mut stmt = self.conn.prepare_cached(query)?;
+            let columns = stmt
+                .column_names()
+                .iter()
+                .map(|c| c.to_string())
+                .collect::<Vec<String>>();
+            let col_count = stmt.column_count();
             let rows = stmt.query_map(params![], |r| {
-                let columns = r
-                    .column_names()
-                    .iter()
-                    .map(|c| c.to_string())
-                    .collect::<Vec<String>>();
-                let col_count = r.column_count();
                 let mut row = Vec::with_capacity(col_count);
-
                 for i in 0..col_count {
-                    row.push(r.get_raw_checked(i)?.into());
+                    row.push(r.get_ref(i)?.into());
                 }
 
+                let columns = columns.clone();
                 Ok(QueryResult { columns, row })
             })?;
 
