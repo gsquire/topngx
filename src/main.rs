@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Seek, SeekFrom, Write};
+use std::io::{self, BufRead, BufReader, Seek, SeekFrom};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -201,7 +201,7 @@ fn input_source(access_log: &str) -> Result<Box<dyn BufRead>> {
 
 fn run(opts: &Options, fields: Option<Vec<String>>, queries: Option<Vec<String>>) -> Result<()> {
     let access_log = match &opts.access_log {
-        Some(l) => &l,
+        Some(l) => l,
         None => {
             if atty::isnt(atty::Stream::Stdin) {
                 STDIN
@@ -238,7 +238,7 @@ fn parse_input(lines: &[String], pattern: &Regex, processor: &Processor) -> Resu
     let fields = processor.fields.clone();
     let records: Vec<_> = lines
         .par_iter()
-        .filter_map(|line| match pattern.captures(&line) {
+        .filter_map(|line| match pattern.captures(line) {
             None => None,
             Some(c) => {
                 let mut record: Vec<(String, Box<dyn ToSql + Send + Sync>)> = vec![];
