@@ -1,3 +1,8 @@
+## 0.4.0
+- Pull Requests
+  -  https://github.com/gsquire/topngx/pull/9
+- Update cargo dependencies.
+
 ## 0.3.1
 - Pull Requests
   - https://github.com/gsquire/topngx/pull/8
