@@ -4,23 +4,20 @@ name: CI
 
 jobs:
   check:
-    name: test
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - name: Install SQLite
         run: sudo apt-get update && sudo apt-get install libsqlite3-dev
 
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Test
+        run: cargo test
