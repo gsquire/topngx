@@ -6,7 +6,7 @@ use crossterm::cursor::RestorePosition;
 use crossterm::execute;
 use log::debug;
 use rusqlite::types::{ToSql, Value};
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use tabwriter::TabWriter;
 
 use super::Options;
