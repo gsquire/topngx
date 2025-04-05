@@ -1,3 +1,8 @@
+## 0.5.0
+- Pull Requests
+  - https://github.com/gsquire/topngx/pull/10
+- Update cargo dependencies and the Rust edition.
+
 ## 0.4.0
 - Pull Requests
   -  https://github.com/gsquire/topngx/pull/9
