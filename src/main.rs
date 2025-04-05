@@ -1,11 +1,11 @@
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Seek, SeekFrom};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use crossbeam_channel::{bounded, select, tick, unbounded};
 use crossterm::cursor::SavePosition;
 use crossterm::execute;
@@ -17,7 +17,7 @@ use rusqlite::types::ToSql;
 use structopt::StructOpt;
 
 use nginx::{available_variables, format_to_pattern};
-use processor::{generate_processor, Processor};
+use processor::{Processor, generate_processor};
 
 mod nginx;
 mod processor;
